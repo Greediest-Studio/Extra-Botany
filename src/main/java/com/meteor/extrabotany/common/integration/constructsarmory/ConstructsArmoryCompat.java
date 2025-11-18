@@ -16,6 +16,8 @@ public class ConstructsArmoryCompat {
     }
 	
 	public static void init() {
+		// Orichalcos和Shadowium材料的护甲统计注册已禁用
+		/*
 		ArmorMaterials.addArmorTrait(TConstructCompat.orichalcos, ArmorTraits.featherweight, ArmorTraits.lightweight);
 		ArmorMaterials.addArmorTrait(TConstructCompat.orichalcos, ArmorTraits.subterranean, ArmorTraits.petravidity);
 		ArmorMaterials.addArmorTrait(TConstructCompat.orichalcos, ArmorTraits.vengeful, ArmorTraits.prideful);
@@ -29,6 +31,7 @@ public class ConstructsArmoryCompat {
                 new CoreMaterialStats(13F, 16),
                 new PlatesMaterialStats(0.95F, 5, 1),
                 new TrimMaterialStats(3.5F));
+        */
     }
 
 }

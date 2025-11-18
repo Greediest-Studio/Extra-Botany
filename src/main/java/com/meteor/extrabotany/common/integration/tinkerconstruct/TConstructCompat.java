@@ -31,8 +31,20 @@ public class TConstructCompat {
     public static Material orichalcos = new Material(Reference.MOD_ID + ":" + LibOreDicts.ORICHALCOS, 0xC71585);
 
     public static void preInit() {
-    	register();
+    	registerTraits(); // 只注册Traits
+    	register(); // 材料注册已禁用
     	preIntegrate(materials, materialIntegrations, materialIntegrationStages);
+    }
+    
+    // 注册Traits，使其可以在游戏中使用（即使不注册材料）
+    private static void registerTraits() {
+        // 注册所有Traits到匠魂系统
+        // 这样即使材料不可用，Traits仍然可以通过其他方式使用
+        TinkerRegistry.addTrait(Body.body);
+        TinkerRegistry.addTrait(Mind.mind);
+        TinkerRegistry.addTrait(Soul.soul);
+        TinkerRegistry.addTrait(Shadow.shadow);
+        TinkerRegistry.addTrait(Mana.mana);
     }
 
     // Copied from PlusTiC
@@ -59,6 +71,8 @@ public class TConstructCompat {
     }
 
     private static void register() {
+        // Shadowium材料注册已禁用
+        /*
         material.addTrait(Shadow.shadow);
         
         material.addTrait(Shadow.shadow, HEAD);
@@ -80,7 +94,10 @@ public class TConstructCompat {
                 new BowMaterialStats(0.8F, 1.5F, 7.5F),
                 new ArrowShaftMaterialStats(1.2f, 6));
         materials.put(material.identifier, material);
+        */
         
+        // Orichalcos材料注册已禁用
+        /*
         orichalcos.addTrait(Body.body);
         orichalcos.addTrait(Mind.mind);
         
@@ -99,6 +116,7 @@ public class TConstructCompat {
                 new BowMaterialStats(1.3F, 3.5F, 9.8F),
                 new ArrowShaftMaterialStats(1.5f, 12));
         materials.put(orichalcos.identifier, orichalcos);
+        */
     }   
 
 }
