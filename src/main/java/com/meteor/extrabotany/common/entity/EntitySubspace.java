@@ -27,6 +27,11 @@ public class EntitySubspace extends EntityThrowableCopy {
 	private static final String TAG_COUNT = "count";
 	private static final String TAG_TYPE = "type";
 	private static final String TAG_EVIL = "isevil";
+	private static final String TAG_DAMAGE = "damage";
+	private static final String TAG_TARGET_X = "targetX";
+	private static final String TAG_TARGET_Y = "targetY";
+	private static final String TAG_TARGET_Z = "targetZ";
+	private static final String TAG_HAS_TARGET = "hasTarget";
 
 	private static final DataParameter<Integer> LIVE_TICKS = EntityDataManager.createKey(EntitySubspace.class,
 			DataSerializers.VARINT);
@@ -43,6 +48,16 @@ public class EntitySubspace extends EntityThrowableCopy {
 	private static final DataParameter<Integer> TYPE = EntityDataManager.createKey(EntitySubspace.class,
 			DataSerializers.VARINT);
 	private static final DataParameter<Boolean> EVIL = EntityDataManager.createKey(EntitySubspace.class,
+			DataSerializers.BOOLEAN);
+	private static final DataParameter<Float> DAMAGE = EntityDataManager.createKey(EntitySubspace.class,
+			DataSerializers.FLOAT);
+	private static final DataParameter<Float> TARGET_X = EntityDataManager.createKey(EntitySubspace.class,
+			DataSerializers.FLOAT);
+	private static final DataParameter<Float> TARGET_Y = EntityDataManager.createKey(EntitySubspace.class,
+			DataSerializers.FLOAT);
+	private static final DataParameter<Float> TARGET_Z = EntityDataManager.createKey(EntitySubspace.class,
+			DataSerializers.FLOAT);
+	private static final DataParameter<Boolean> HAS_TARGET = EntityDataManager.createKey(EntitySubspace.class,
 			DataSerializers.BOOLEAN);
 
 	public EntitySubspace(World world) {
@@ -92,16 +107,41 @@ public class EntitySubspace extends EntityThrowableCopy {
 			} else if (getType() == 1) {
 				if (ticksExisted > getDelay() + 8 && getCount() < 1) {
 					EntitySubspaceSpear spear = new EntitySubspaceSpear(world, thrower);
-					spear.setDamage(12);
+					// 使用自定义伤害值，如果未设置则使用默认值
+					float damage = getDamage() > 0 ? getDamage() : 12;
 					if (thrower instanceof EntityVoidHerrscher) {
-						spear.setDamage(14);
+						damage = 14;
 						spear.setLiveTicks(1);
 					}
+					spear.setDamage(damage);
 					spear.setLife(100);
-					spear.rotationYaw = thrower.rotationYaw;
-					spear.setPitch(-thrower.rotationPitch);
-					spear.setRotation(MathHelper.wrapDegrees(-thrower.rotationYaw + 180));
-					spear.shoot(thrower, thrower.rotationPitch, thrower.rotationYaw, 0.0F, 2.45F, 1.0F);
+					
+					// 检查是否有自定义目标坐标
+					if (getHasTarget()) {
+						// 使用自定义目标坐标
+						double deltaX = getTargetX() - posX;
+						double deltaY = getTargetY() - (posY - 0.75F);
+						double deltaZ = getTargetZ() - posZ;
+						double length = MathHelper.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+						
+						if (length > 0) {
+							double horizontalDistance = MathHelper.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+							float pitch = (float) (MathHelper.atan2(deltaY, horizontalDistance) * (180D / Math.PI));
+							float yaw = (float) (MathHelper.atan2(deltaX, deltaZ) * (180D / Math.PI));
+							
+							spear.rotationYaw = yaw;
+							spear.setPitch(-pitch);
+							spear.setRotation(MathHelper.wrapDegrees(-yaw + 180));
+							spear.shoot(deltaX / length, deltaY / length, deltaZ / length, 2.45F, 1.0F);
+						}
+					} else {
+						// 使用thrower的视角（原版行为）
+						spear.rotationYaw = thrower.rotationYaw;
+						spear.setPitch(-thrower.rotationPitch);
+						spear.setRotation(MathHelper.wrapDegrees(-thrower.rotationYaw + 180));
+						spear.shoot(thrower, thrower.rotationPitch, thrower.rotationYaw, 0.0F, 2.45F, 1.0F);
+					}
+					
 					spear.setPosition(posX, posY - 0.75F, posZ);
 					thrower.world.spawnEntity(spear);
 					setCount(getCount() + 1);
@@ -138,6 +178,11 @@ public class EntitySubspace extends EntityThrowableCopy {
 		dataManager.register(INTERVAL, 0);
 		dataManager.register(COUNT, 0);
 		dataManager.register(TYPE, 0);
+		dataManager.register(DAMAGE, 0F);
+		dataManager.register(TARGET_X, 0F);
+		dataManager.register(TARGET_Y, 0F);
+		dataManager.register(TARGET_Z, 0F);
+		dataManager.register(HAS_TARGET, false);
 	}
 
 	@Override
@@ -149,6 +194,11 @@ public class EntitySubspace extends EntityThrowableCopy {
 		setInterval(cmp.getInteger(TAG_INTERVAL));
 		setCount(cmp.getInteger(TAG_COUNT));
 		setType(cmp.getInteger(TAG_TYPE));
+		setDamage(cmp.getFloat(TAG_DAMAGE));
+		setTargetX(cmp.getFloat(TAG_TARGET_X));
+		setTargetY(cmp.getFloat(TAG_TARGET_Y));
+		setTargetZ(cmp.getFloat(TAG_TARGET_Z));
+		setHasTarget(cmp.getBoolean(TAG_HAS_TARGET));
 	}
 
 	@Override
@@ -160,6 +210,11 @@ public class EntitySubspace extends EntityThrowableCopy {
 		cmp.setInteger(TAG_INTERVAL, getInterval());
 		cmp.setInteger(TAG_COUNT, getCount());
 		cmp.setInteger(TAG_TYPE, getType());
+		cmp.setFloat(TAG_DAMAGE, getDamage());
+		cmp.setFloat(TAG_TARGET_X, (float) getTargetX());
+		cmp.setFloat(TAG_TARGET_Y, (float) getTargetY());
+		cmp.setFloat(TAG_TARGET_Z, (float) getTargetZ());
+		cmp.setBoolean(TAG_HAS_TARGET, getHasTarget());
 	}
 
 	public int getLiveTicks() {
@@ -216,6 +271,53 @@ public class EntitySubspace extends EntityThrowableCopy {
 
 	public void setSize(float size) {
 		dataManager.set(SIZE, size);
+	}
+
+	public float getDamage() {
+		return dataManager.get(DAMAGE);
+	}
+
+	public void setDamage(float damage) {
+		dataManager.set(DAMAGE, damage);
+	}
+
+	public float getTargetX() {
+		return dataManager.get(TARGET_X);
+	}
+
+	public void setTargetX(float x) {
+		dataManager.set(TARGET_X, x);
+	}
+
+	public float getTargetY() {
+		return dataManager.get(TARGET_Y);
+	}
+
+	public void setTargetY(float y) {
+		dataManager.set(TARGET_Y, y);
+	}
+
+	public float getTargetZ() {
+		return dataManager.get(TARGET_Z);
+	}
+
+	public void setTargetZ(float z) {
+		dataManager.set(TARGET_Z, z);
+	}
+
+	public boolean getHasTarget() {
+		return dataManager.get(HAS_TARGET);
+	}
+
+	public void setHasTarget(boolean hasTarget) {
+		dataManager.set(HAS_TARGET, hasTarget);
+	}
+
+	public void setTarget(double x, double y, double z) {
+		setTargetX((float) x);
+		setTargetY((float) y);
+		setTargetZ((float) z);
+		setHasTarget(true);
 	}
 
 	@Override
